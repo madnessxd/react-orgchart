@@ -17,6 +17,7 @@ const propTypes = {
   datasource: PropTypes.object.isRequired,
   pan: PropTypes.bool,
   zoom: PropTypes.bool,
+  zoomStart: PropTypes.number,
   zoomoutLimit: PropTypes.number,
   zoominLimit: PropTypes.number,
   containerClass: PropTypes.string,
@@ -32,6 +33,7 @@ const propTypes = {
 const defaultProps = {
   pan: false,
   zoom: false,
+  zoomStart: 1,
   zoomoutLimit: 0.5,
   zoominLimit: 7,
   containerClass: "",
@@ -47,6 +49,7 @@ const ChartContainer = forwardRef(
       datasource,
       pan,
       zoom,
+      zoomStart,
       zoomoutLimit,
       zoominLimit,
       containerClass,
@@ -77,7 +80,7 @@ const ChartContainer = forwardRef(
       data.relationship =
         flags + (data.children && data.children.length > 0 ? 1 : 0);
       if (data.children) {
-        data.children.forEach(function(item) {
+        data.children.forEach(function (item) {
           attachRel(item, "1" + (data.children.length > 1 ? 1 : 0));
         });
       }
@@ -121,7 +124,7 @@ const ChartContainer = forwardRef(
       }
       if (transform === "") {
         if (transform.indexOf("3d") === -1) {
-          setTransform("matrix(1,0,0,1," + newX + "," + newY + ")");
+          setTransform("matrix(" + zoomStart + ",0,0," + zoomStart + "," + newX + "," + newY + ")");
         } else {
           setTransform(
             "matrix3d(1,0,0,0,0,1,0,0,0,0,1,0," + newX + ", " + newY + ",0,1)"
@@ -177,7 +180,7 @@ const ChartContainer = forwardRef(
       let matrix = [];
       let targetScale = 1;
       if (transform === "") {
-        setTransform("matrix(" + newScale + ", 0, 0, " + newScale + ", 0, 0)");
+        setTransform("matrix(" + (zoomStart + (newScale - 1)) + ", 0, 0, " + (zoomStart + (newScale - 1)) + ", 0, 0)");
       } else {
         matrix = transform.split(",");
         if (transform.indexOf("3d") === -1) {
@@ -209,15 +212,15 @@ const ChartContainer = forwardRef(
       const doc =
         canvasWidth > canvasHeight
           ? new jsPDF({
-              orientation: "landscape",
-              unit: "px",
-              format: [canvasWidth, canvasHeight]
-            })
+            orientation: "landscape",
+            unit: "px",
+            format: [canvasWidth, canvasHeight]
+          })
           : new jsPDF({
-              orientation: "portrait",
-              unit: "px",
-              format: [canvasHeight, canvasWidth]
-            });
+            orientation: "portrait",
+            unit: "px",
+            format: [canvasHeight, canvasWidth]
+          });
       doc.addImage(canvas.toDataURL("image/jpeg", 1.0), "JPEG", 0, 0);
       doc.save(exportFilename + ".pdf");
     };
@@ -239,6 +242,11 @@ const ChartContainer = forwardRef(
       }
     };
 
+    const orgchartDiv = document.querySelector(".orgchart");
+    if (orgchartDiv && orgchartDiv.style.transform === '' && zoomStart !== 1) {
+      orgchartDiv.style.transform = `matrix(${zoomStart}, 0, 0, ${zoomStart}, 0, 0)`;
+    }
+
     const changeHierarchy = async (draggedItemData, dropTargetId) => {
       await dsDigger.removeNode(draggedItemData.id);
       await dsDigger.addChildren(dropTargetId, draggedItemData);
@@ -257,7 +265,7 @@ const ChartContainer = forwardRef(
         html2canvas(chart.current, {
           width: chart.current.clientWidth,
           height: chart.current.clientHeight,
-          onclone: function(clonedDoc) {
+          onclone: function (clonedDoc) {
             clonedDoc.querySelector(".orgchart").style.background = "none";
             clonedDoc.querySelector(".orgchart").style.transform = "";
           }
