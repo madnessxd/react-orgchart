@@ -92,6 +92,12 @@
       <td>If true, the chart can be zoomed.</td>
     </tr>
     <tr>
+      <td>zoomStart</td>
+      <td>number</td>
+      <td>1</td>
+      <td>Set at what zoomlevel the graph will load.</td>
+    </tr>
+    <tr>
       <td>zoominLimit</td>
       <td>number</td>
       <td>7</td>
