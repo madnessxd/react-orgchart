@@ -13,11 +13,15 @@ import jsPDF from "jspdf";
 import ChartNode from "./ChartNode";
 import "./ChartContainer.css";
 
+let init = false;
+
 const propTypes = {
   datasource: PropTypes.object.isRequired,
   pan: PropTypes.bool,
   zoom: PropTypes.bool,
   zoomStart: PropTypes.number,
+  zoomX: PropTypes.number,
+  zoomY: PropTypes.number,
   zoomoutLimit: PropTypes.number,
   zoominLimit: PropTypes.number,
   containerClass: PropTypes.string,
@@ -34,6 +38,8 @@ const defaultProps = {
   pan: false,
   zoom: false,
   zoomStart: 1,
+  zoomX: 1,
+  zoomY: 1,
   zoomoutLimit: 0.5,
   zoominLimit: 7,
   containerClass: "",
@@ -50,6 +56,8 @@ const ChartContainer = forwardRef(
       pan,
       zoom,
       zoomStart,
+      zoomX,
+      zoomY,
       zoomoutLimit,
       zoominLimit,
       containerClass,
@@ -113,12 +121,12 @@ const ChartContainer = forwardRef(
       let newY = 0;
       if (!e.targetTouches) {
         // pand on desktop
-        newX = e.pageX - startX;
-        newY = e.pageY - startY;
+        newX = zoomX + (e.pageX - startX);
+        newY = zoomY + (e.pageY - startY);
       } else if (e.targetTouches.length === 1) {
         // pan on mobile device
-        newX = e.targetTouches[0].pageX - startX;
-        newY = e.targetTouches[0].pageY - startY;
+        newX = zoomX + (e.targetTouches[0].pageX - startX);
+        newY = zoomY + (e.targetTouches[0].pageY - startY);
       } else if (e.targetTouches.length > 1) {
         return;
       }
@@ -165,12 +173,14 @@ const ChartContainer = forwardRef(
       }
       if (!e.targetTouches) {
         // pand on desktop
-        setStartX(e.pageX - lastX);
-        setStartY(e.pageY - lastY);
+        setStartX(e.pageX - lastX + (!init ? 0 : zoomX));
+        setStartY(e.pageY - lastY + (!init ? 0 : zoomY));
+        init = true;
       } else if (e.targetTouches.length === 1) {
         // pan on mobile device
-        setStartX(e.targetTouches[0].pageX - lastX);
-        setStartY(e.targetTouches[0].pageY - lastY);
+        setStartX(e.targetTouches[0].pageX - lastX + (!init ? 0 : zoomX));
+        setStartY(e.targetTouches[0].pageY - lastY + (!init ? 0 : zoomY));
+        init = true;
       } else if (e.targetTouches.length > 1) {
         return;
       }
@@ -180,7 +190,7 @@ const ChartContainer = forwardRef(
       let matrix = [];
       let targetScale = 1;
       if (transform === "") {
-        setTransform("matrix(" + (zoomStart + (newScale - 1)) + ", 0, 0, " + (zoomStart + (newScale - 1)) + ", 0, 0)");
+        setTransform("matrix(" + (zoomStart + (newScale - 1)) + ", 0, 0, " + (zoomStart + (newScale - 1)) + ", " + zoomX + ", " + zoomY + ")");
       } else {
         matrix = transform.split(",");
         if (transform.indexOf("3d") === -1) {
@@ -244,7 +254,8 @@ const ChartContainer = forwardRef(
 
     const orgchartDiv = document.querySelector(".orgchart");
     if (orgchartDiv && orgchartDiv.style.transform === '' && zoomStart !== 1) {
-      orgchartDiv.style.transform = `matrix(${zoomStart}, 0, 0, ${zoomStart}, 0, 0)`;
+      init = false;
+      orgchartDiv.style.transform = `matrix(${zoomStart}, 0, 0, ${zoomStart}, ${zoomX}, ${zoomY})`;
     }
 
     const changeHierarchy = async (draggedItemData, dropTargetId) => {
