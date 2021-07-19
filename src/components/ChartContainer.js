@@ -13,6 +13,7 @@ import jsPDF from "jspdf";
 import ChartNode from "./ChartNode";
 import "./ChartContainer.css";
 
+let extraZoomPrev = 0;
 let init = false;
 
 const propTypes = {
@@ -20,6 +21,7 @@ const propTypes = {
   pan: PropTypes.bool,
   zoom: PropTypes.bool,
   zoomStart: PropTypes.number,
+  extraZoom: PropTypes.number,
   zoomX: PropTypes.number,
   zoomY: PropTypes.number,
   zoomoutLimit: PropTypes.number,
@@ -38,6 +40,7 @@ const defaultProps = {
   pan: false,
   zoom: false,
   zoomStart: 1,
+  extraZoom: 0,
   zoomX: 1,
   zoomY: 1,
   zoomoutLimit: 0.5,
@@ -56,6 +59,7 @@ const ChartContainer = forwardRef(
       pan,
       zoom,
       zoomStart,
+      extraZoom,
       zoomX,
       zoomY,
       zoomoutLimit,
@@ -312,7 +316,11 @@ const ChartContainer = forwardRef(
           });
       }
     }));
-
+    if (extraZoom !== extraZoomPrev) {
+      extraZoomPrev = extraZoom;
+      var newScale = 1 + (extraZoom > 0 ? -0.2 : 0.2);
+      updateChartScale(newScale);
+    }
     return (
       <div
         ref={container}
